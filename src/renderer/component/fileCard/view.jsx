@@ -36,18 +36,23 @@ class FileCard extends React.PureComponent<Props> {
     placeholder: false,
   };
 
-  componentWillMount() {
-    this.resolve(this.props);
+  componentDidMount() {
+    if (!this.props.preventResolve) {
+      this.resolve(this.props);
+    }
   }
 
-  componentWillReceiveProps(nextProps: Props) {
-    this.resolve(nextProps);
+  componentDidUpdate() {
+    if (!this.props.preventResolve) {
+      this.resolve(this.props);
+    }
   }
 
   resolve = (props: Props) => {
     const { isResolvingUri, resolveUri, claim, uri, pending } = props;
 
     if (!pending && !isResolvingUri && claim === undefined && uri) {
+      // console.log('resolve');
       resolveUri(uri);
     }
   };
@@ -74,7 +79,7 @@ class FileCard extends React.PureComponent<Props> {
       return null;
     }
 
-    if ((!claim && !pending) || placeholder) {
+    if (!claim && (!pending || placeholder)) {
       return (
         <li className="media-card media--placeholder">
           <div className="media__thumb media__thumb--placeholder" />

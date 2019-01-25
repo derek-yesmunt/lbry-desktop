@@ -45,14 +45,19 @@ class CategoryList extends PureComponent<Props, State> {
   }
 
   componentDidMount() {
-    const { fetching, categoryLink, fetchChannel } = this.props;
+    const { fetching, categoryLink, fetchChannel, resolveUris } = this.props;
     if (!fetching && categoryLink) {
       fetchChannel(categoryLink);
     }
 
     const scrollWrapper = this.scrollWrapper.current;
     if (scrollWrapper) {
-      scrollWrapper.addEventListener('scroll', throttle(this.handleArrowButtonsOnScroll, 500));
+      const shouldResolve = window.innerHeight > this.scrollWrapper.current.offsetTop;
+      if (shouldResolve && this.props.names && this.props.names.length) {
+        this.setState({ shouldResolve: true });
+        resolveUris(this.props.names);
+      }
+      // scrollWrapper.addEventListener('scroll', throttle(this.handleArrowButtonsOnScroll, 500));
     }
   }
 
@@ -213,7 +218,7 @@ class CategoryList extends PureComponent<Props, State> {
 
   render() {
     const { category, categoryLink, names, channelClaims, obscureNsfw } = this.props;
-    const { canScrollNext, canScrollPrevious } = this.state;
+    const { canScrollNext, canScrollPrevious, shouldResolve } = this.state;
     const isCommunityTopBids = category.match(/^community/i);
     const showScrollButtons = isCommunityTopBids ? !obscureNsfw : true;
 
@@ -286,7 +291,13 @@ class CategoryList extends PureComponent<Props, State> {
             {names &&
               !!names.length &&
               names.map(name => (
-                <FileCard showSubscribedLogo key={name} uri={normalizeURI(name)} />
+                <FileCard
+                  placeholder={true}
+                  preventResolve={true}
+                  showSubscribedLogo
+                  key={name}
+                  uri={normalizeURI(name)}
+                />
               ))}
 
             {(!names || !names.length) &&
@@ -297,6 +308,8 @@ class CategoryList extends PureComponent<Props, State> {
                 .slice(0, 10)
                 .map(claim => (
                   <FileCard
+                    placeholder={true}
+                    preventResolve={true}
                     showSubcribedLogo
                     key={claim.claim_id}
                     uri={`lbry://${claim.name}#${claim.claim_id}`}
