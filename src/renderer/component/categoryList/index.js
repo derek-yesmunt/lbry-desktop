@@ -1,5 +1,6 @@
 import { connect } from 'react-redux';
 import { doFetchClaimsByChannel } from 'redux/actions/content';
+import { makeSelectCategoryListUris } from 'redux/selectors/content';
 import {
   makeSelectClaimsInChannelForCurrentPage,
   makeSelectFetchingChannelClaims,
@@ -9,7 +10,7 @@ import { selectShowNsfw } from 'redux/selectors/settings';
 import CategoryList from './view';
 
 const select = (state, props) => ({
-  channelClaims: makeSelectClaimsInChannelForCurrentPage(props.categoryLink)(state),
+  urisInList: makeSelectCategoryListUris(props.uris, props.categoryLink)(state),
   fetching: makeSelectFetchingChannelClaims(props.categoryLink)(state),
   obscureNsfw: !selectShowNsfw(state),
 });

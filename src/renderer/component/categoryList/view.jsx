@@ -11,7 +11,7 @@ import throttle from 'util/throttle';
 
 type Props = {
   category: string,
-  names: ?Array<string>,
+  urisInList: ?Array<string>,
   categoryLink: ?string,
   fetching: boolean,
   channelClaims: ?Array<Claim>,
@@ -26,7 +26,7 @@ type State = {
 
 class CategoryList extends PureComponent<Props, State> {
   static defaultProps = {
-    categoryLink: '',
+    categoryLink: undefined,
   };
 
   constructor() {
@@ -40,28 +40,46 @@ class CategoryList extends PureComponent<Props, State> {
     (this: any).handleScrollNext = this.handleScrollNext.bind(this);
     (this: any).handleScrollPrevious = this.handleScrollPrevious.bind(this);
     (this: any).handleArrowButtonsOnScroll = this.handleArrowButtonsOnScroll.bind(this);
+    (this: any).handleResolveOnScroll = this.handleResolveOnScroll.bind(this);
 
     this.scrollWrapper = createRef();
   }
 
   componentDidMount() {
-    const { fetching, categoryLink, fetchChannel, resolveUris } = this.props;
-    if (!fetching && categoryLink) {
+    const { fetching, categoryLink, fetchChannel, resolveUris, urisInList } = this.props;
+    if (!fetching && categoryLink && (!urisInList || urisInList.length)) {
+      // Only fetch the channels claims if no urisInList are specifically passed in
+      // This allows setting a channel link and and passing in a custom list of urisInList (featured content usually works this way)
       fetchChannel(categoryLink);
     }
 
     const scrollWrapper = this.scrollWrapper.current;
     if (scrollWrapper) {
+      scrollWrapper.addEventListener('scroll', throttle(this.handleArrowButtonsOnScroll, 500));
+
       const shouldResolve = window.innerHeight > this.scrollWrapper.current.offsetTop;
-      if (shouldResolve && this.props.names && this.props.names.length) {
-        this.setState({ shouldResolve: true });
-        resolveUris(this.props.names);
+      if (shouldResolve && this.props.urisInList && this.props.urisInList.length) {
+        resolveUris(this.props.urisInList);
       }
-      // scrollWrapper.addEventListener('scroll', throttle(this.handleArrowButtonsOnScroll, 500));
     }
+
+    const mainContent = document.getElementById('content');
+    mainContent.addEventListener('scroll', throttle(this.handleResolveOnScroll, 200));
   }
 
   scrollWrapper: { current: null | HTMLUListElement };
+
+  handleResolveOnScroll() {
+    console.log('scroll');
+    const { urisInList, resolveUris } = this.props;
+
+    const scrollWrapper = this.scrollWrapper.current;
+
+    const shouldResolve = window.innerHeight > scrollWrapper.current.offsetTop;
+    if (shouldResolve && this.props.urisInList) {
+      resolveUris(this.props.urisInList);
+    }
+  }
 
   handleArrowButtonsOnScroll() {
     // Determine if the arrow buttons should be disabled
@@ -217,7 +235,7 @@ class CategoryList extends PureComponent<Props, State> {
   }
 
   render() {
-    const { category, categoryLink, names, channelClaims, obscureNsfw } = this.props;
+    const { category, categoryLink, urisInList, channelClaims, obscureNsfw } = this.props;
     const { canScrollNext, canScrollPrevious, shouldResolve } = this.state;
     const isCommunityTopBids = category.match(/^community/i);
     const showScrollButtons = isCommunityTopBids ? !obscureNsfw : true;
@@ -249,7 +267,7 @@ class CategoryList extends PureComponent<Props, State> {
                 direction="top"
                 label={__("What's this?")}
                 body={__(
-                  'Community Content is a public space where anyone can share content with the rest of the LBRY community. Bid on the names from "one" to "ten" to put your content here!'
+                  'Community Content is a public space where anyone can share content with the rest of the LBRY community. Bid on the urisInList from "one" to "ten" to put your content here!'
                 )}
               />
             )}
@@ -278,19 +296,8 @@ class CategoryList extends PureComponent<Props, State> {
           </p>
         ) : (
           <ul className="media-scrollhouse" ref={this.scrollWrapper}>
-            {/*
-              `names` and `channelClaims` should be combined
-              it's set up to take a list of names (uris) to show as cards
-              or a channel link, which it uses for fetch a list of names
-              having both makes it really confusing
-
-              will come back to this once we determine how we will receive channel links
-              from the homepage uris api call
-              - sean
-            */}
-            {names &&
-              !!names.length &&
-              names.map(name => (
+            {urisInList &&
+              urisInList.map(name => (
                 <FileCard
                   placeholder={true}
                   preventResolve={true}
@@ -300,27 +307,7 @@ class CategoryList extends PureComponent<Props, State> {
                 />
               ))}
 
-            {(!names || !names.length) &&
-              channelClaims &&
-              channelClaims.length &&
-              channelClaims
-                // Only show the first 10 claims, regardless of the amount we have on a channel page
-                .slice(0, 10)
-                .map(claim => (
-                  <FileCard
-                    placeholder={true}
-                    preventResolve={true}
-                    showSubcribedLogo
-                    key={claim.claim_id}
-                    uri={`lbry://${claim.name}#${claim.claim_id}`}
-                  />
-                ))}
-            {/*
-                If there aren't any uris passed in, create an empty array and render placeholder cards
-                channelClaims or names are being fetched
-              */}
-            {!channelClaims &&
-              !names &&
+            {!urisInList &&
               /* eslint-disable react/no-array-index-key */
               new Array(10).fill(1).map((x, i) => <FileCard placeholder key={i} />)
             /* eslint-enable react/no-array-index-key */

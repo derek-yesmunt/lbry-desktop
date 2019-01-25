@@ -1,5 +1,9 @@
 import { createSelector } from 'reselect';
-import { makeSelectClaimForUri, selectClaimsByUri } from 'lbry-redux';
+import {
+  makeSelectClaimForUri,
+  selectClaimsByUri,
+  makeSelectClaimsInChannelForCurrentPage,
+} from 'lbry-redux';
 import { HISTORY_ITEMS_PER_PAGE } from 'constants/content';
 
 export const selectState = state => state.content || {};
@@ -53,3 +57,17 @@ export const makeSelectHistoryForPage = page =>
 
 export const makeSelectHistoryForUri = uri =>
   createSelector(selectState, state => state.history.find(i => i.uri === uri));
+
+export const makeSelectCategoryListUris = (uris: Array<string> = [], channel: string) =>
+  createSelector(makeSelectClaimsInChannelForCurrentPage(channel), channelClaims => {
+    if (uris) return uris;
+
+    if (channelClaims) {
+      const CATEGORY_LIST_SIZE = 10;
+      return channelClaims
+        .slice(0, CATEGORY_LIST_SIZE)
+        .map(({ name, claim_id }) => `${claim.name}#${claim.claim_id}`);
+    }
+
+    return null;
+  });
