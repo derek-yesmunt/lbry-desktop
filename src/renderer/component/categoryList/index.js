@@ -5,6 +5,7 @@ import {
   makeSelectClaimsInChannelForCurrentPage,
   makeSelectFetchingChannelClaims,
   doResolveUris,
+  selectActiveHistoryEntry,
 } from 'lbry-redux';
 import { selectShowNsfw } from 'redux/selectors/settings';
 import CategoryList from './view';
@@ -13,6 +14,7 @@ const select = (state, props) => ({
   urisInList: makeSelectCategoryListUris(props.uris, props.categoryLink)(state),
   fetching: makeSelectFetchingChannelClaims(props.categoryLink)(state),
   obscureNsfw: !selectShowNsfw(state),
+  currentPageAttributes: selectActiveHistoryEntry(state),
 });
 
 const perform = dispatch => ({

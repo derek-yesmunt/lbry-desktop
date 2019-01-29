@@ -29,6 +29,8 @@ class CategoryList extends PureComponent<Props, State> {
     categoryLink: undefined,
   };
 
+  scrollWrapper: { current: null | HTMLUListElement };
+
   constructor() {
     super();
 
@@ -63,19 +65,38 @@ class CategoryList extends PureComponent<Props, State> {
       }
     }
 
-    const mainContent = document.getElementById('content');
-    mainContent.addEventListener('scroll', throttle(this.handleResolveOnScroll, 200));
+    // const mainContent = document.getElementById('content');
+    // mainContent.addEventListener('scroll', throttle(this.handleResolveOnScroll, 200));
   }
 
-  scrollWrapper: { current: null | HTMLUListElement };
+  componentDidUpdate(prevProps) {
+    const {
+      currentPageAttributes: { scrollY: previousScrollY },
+    } = prevProps;
+    const {
+      currentPageAttributes: { scrollY },
+    } = this.props;
+
+    if (scrollY > previousScrollY) {
+      this.handleResolveOnScroll();
+    }
+  }
 
   handleResolveOnScroll() {
     console.log('scroll');
-    const { urisInList, resolveUris } = this.props;
+
+    const {
+      urisInList,
+      resolveUris,
+      currentPageAttributes: { scrollY },
+    } = this.props;
 
     const scrollWrapper = this.scrollWrapper.current;
+    if (!scrollWrapper) {
+      return;
+    }
 
-    const shouldResolve = window.innerHeight > scrollWrapper.current.offsetTop;
+    const shouldResolve = window.innerHeight > scrollWrapper.offsetTop - scrollY;
     if (shouldResolve && this.props.urisInList) {
       resolveUris(this.props.urisInList);
     }
